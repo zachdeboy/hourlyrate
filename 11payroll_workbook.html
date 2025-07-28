@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Workbook - Fredericksburg</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .controls-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        .control-box h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: inline-block;
+            width: 140px;
+            font-weight: bold;
+            color: #666;
+        }
+        .form-group input, .form-group select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: 150px;
+        }
+        .info-section {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .tax-rates {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tax-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        .summary-section {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 20px;
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td:first-child, td:nth-child(2), td:nth-child(3) {
+            text-align: left;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .total-row {
+            background-color: #fffacd;
+            font-weight: bold;
+        }
+        .empty-row {
+            background-color: #f5f5f5;
+            height: 20px;
+        }
+        .ytd-limit {
+            color: #dc3545;
+            font-size: 10px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 2px;
+            border: 1px solid #ccc;
+            text-align: right;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .download-btn {
+            background-color: #2196F3;
+        }
+        .download-btn:hover {
+            background-color: #0b7dda;
+        }
+        .add-btn {
+            background-color: #ff9800;
+        }
+        .add-btn:hover {
+            background-color: #e68900;
+        }
+        .save-btn {
+            background-color: #9c27b0;
+        }
+        .save-btn:hover {
+            background-color: #7b1fa2;
+        }
+        .print-btn {
+            background-color: #607d8b;
+        }
+        .print-btn:hover {
+            background-color: #455a64;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 5px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        @media print {
+            .controls-section, .action-buttons, .info-section, .delete-btn, button { 
+                display: none !important; 
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+            table {
+                font-size: 10px;
+            }
+            th, td {
+                padding: 4px;
+            }
+        }
+        @media (max-width: 768px) {
+            .form-group label {
+                display: block;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .form-group input, .form-group select {
+                width: 100%;
+            }
+            input[type="number"] {
+                width: 50px;
+            }
+            table {
+                font-size: 10px;
+            }
+            th, td {
+                padding: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pay Period - Fredericksburg Cost & Scope of Work</h1>
+        
+        <div class="controls-section">
+            <div class="control-box">
+                <h3>Pay Period Settings</h3>
+                <div class="form-group">
+                    <label>Period Start:</label>
+                    <input type="date" id="periodStart" onchange="updatePeriod()">
+                </div>
+                <div class="form-group">
+                    <label>Period End:</label>
+                    <input type="date" id="periodEnd" onchange="updatePeriod()">
+                </div>
+                <div class="form-group">
+                    <label>Pay Frequency:</label>
+                    <select id="payFrequency" onchange="updateSettings()">
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Bi-Weekly</option>
+                        <option value="semimonthly">Semi-Monthly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="control-box">
+                <h3>Tax Settings</h3>
+                <div class="form-group">
+                    <label>State:</label>
+                    <select id="state" onchange="updateStateTax()">
+                        <option value="VA">Virginia</option>
+                        <option value="MD">Maryland</option>
+                        <option value="DC">DC</option>
+                        <option value="WV">West Virginia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>SUTA Rate (%):</label>
+                    <input type="number" id="sutaRate" value="2.5" step="0.1" min="0" max="10" onchange="updateSettings()">
+                </div>
+                <div class="form-group">
+                    <label>Default WC Rate (%):</label>
+                    <input type="number" id="wcRate" value="8.37" step="0.01" min="0" max="50" onchange="updateSettings()">
+                </div>
+            </div>
+            
+            <div class="control-box">
+                <h3>Company Settings</h3>
+                <div class="form-group">
+                    <label>Default Markup (%):</label>
+                    <input type="number" id="defaultMarkup" value="15" step="1" min="0" max="100" onchange="updateSettings()">
+                </div>
+                <div class="form-group">
+                    <label>Include YTD Limits:</label>
+                    <input type="checkbox" id="includeYTD" checked onchange="updateSettings()">
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h3>Payroll Summary</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Total Employees</div>
+                    <div class="summary-value" id="totalEmployees">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Hours</div>
+                    <div class="summary-value" id="totalHours">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Gross Pay</div>
+                    <div class="summary-value" id="totalGrossPay">$0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Employer Cost</div>
+                    <div class="summary-value" id="totalEmployerCost">$0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Bill to Client</div>
+                    <div class="summary-value" id="totalBillAmount">$0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3>2025 Tax Rates Applied:</h3>
+            <div class="tax-rates">
+                <div class="tax-item">
+                    <strong>Social Security:</strong> 6.2% (up to $176,100)
+                </div>
+                <div class="tax-item">
+                    <strong>Medicare:</strong> 1.45%
+                </div>
+                <div class="tax-item">
+                    <strong>FUTA:</strong> 0.6% (up to $7,000)
+                </div>
+                <div class="tax-item">
+                    <strong>SUTA (<span id="stateDisplay">VA</span>):</strong> <span id="sutaDisplay">2.5%</span>
+                </div>
+                <div class="tax-item">
+                    <strong>Workers Comp:</strong> Varies by class
+                </div>
+                <div class="tax-item">
+                    <strong>GL/Prof Liability:</strong> 0.47%
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="calculateAll()">Recalculate All</button>
+            <button class="add-btn" onclick="showAddEmployee()">Add Employee</button>
+            <button class="download-btn" onclick="downloadExcel()">Download Excel</button>
+            <button class="save-btn" onclick="saveToLocal()">Save Data</button>
+            <button class="save-btn" onclick="loadFromLocal()">Load Data</button>
+            <button class="print-btn" onclick="window.print()">Print Report</button>
+        </div>
+
+        <table id="payrollTable">
+            <thead>
+                <tr>
+                    <th>Classification</th>
+                    <th>Sub Classification</th>
+                    <th>Employee</th>
+                    <th>Base Rate</th>
+                    <th>Reg Hours</th>
+                    <th>Reg Pay</th>
+                    <th>OT Hours</th>
+                    <th>OT Pay</th>
+                    <th>Total Gross</th>
+                    <th>YTD Gross</th>
+                    <th>Social Security</th>
+                    <th>Medicare</th>
+                    <th>FUTA</th>
+                    <th>SUTA</th>
+                    <th>WC</th>
+                    <th>GL/Prof</th>
+                    <th>Total Cost</th>
+                    <th>Markup %</th>
+                    <th>Markup Fee</th>
+                    <th>Total Bill</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="payrollBody">
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div id="addEmployeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Add New Employee</h2>
+            <div class="form-group">
+                <label>Classification:</label>
+                <select id="newClass">
+                    <option value="Salary">Salary</option>
+                    <option value="Hourly">Hourly</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sub Classification:</label>
+                <select id="newSubClass">
+                    <option value="Superintendent">Superintendent</option>
+                    <option value="Project Manager">Project Manager</option>
+                    <option value="General Conditions">General Conditions</option>
+                    <option value="Foreman">Foreman</option>
+                    <option value="Skilled Labor">Skilled Labor</option>
+                    <option value="Laborer">Laborer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Employee Name:</label>
+                <input type="text" id="newName" placeholder="Enter name">
+            </div>
+            <div class="form-group">
+                <label>Base Rate:</label>
+                <input type="number" id="newRate" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>YTD Gross:</label>
+                <input type="number" id="newYTD" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>WC Rate (%):</label>
+                <input type="number" id="newWCRate" step="0.01" min="0" value="8.37">
+            </div>
+            <div class="form-group">
+                <label>Markup (%):</label>
+                <input type="number" id="newMarkup" step="1" min="0" value="15">
+            </div>
+            <button onclick="addEmployee()">Add Employee</button>
+            <button onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Employee data with YTD tracking
+        let employees = [
+            { class: "Salary", subClass: "Superintendent", name: "George Hernandez", rate: 43.27, regHours: 0, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 0 },
+            { class: "Salary", subClass: "Superintendent", name: "Larry Harlan", rate: 50.00, regHours: 0, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 0 },
+            { class: "Salary", subClass: "Project Manager", name: "Rick Anderson", rate: 64.90, regHours: 80, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 50000 },
+            { class: "", subClass: "", name: "", rate: 0, regHours: 0, otHours: 0, wcRate: 0, markup: 0, ytdGross: 0 },
+            { class: "Salary", subClass: "General Conditions", name: "Roger DeBoy", rate: 95.194, regHours: 0, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 0 },
+            { class: "Salary", subClass: "General Conditions", name: "Zachary DeBoy", rate: 87.263, regHours: 0, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 0 },
+            { class: "", subClass: "", name: "", rate: 0, regHours: 0, otHours: 0, wcRate: 0, markup: 0, ytdGross: 0 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Luis Galvan", rate: 25.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 15000 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Lalo Ponce", rate: 29.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 20000 },
+            { class: "Hourly", subClass: "Foreman", name: "Mathew McComas", rate: 27.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 18000 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Freddie Huchin", rate: 30.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 25000 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Victor Huchin", rate: 27.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 22000 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Marcos Vasquez", rate: 24.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 12000 },
+            { class: "Hourly", subClass: "Skilled Labor", name: "Andres Barrios", rate: 27.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 16000 },
+            { class: "Hourly", subClass: "Laborer", name: "Alexis Carrilo Franco", rate: 17.00, regHours: 1, otHours: 0, wcRate: 8.37, markup: 0.15, ytdGross: 8000 }
+        ];
+
+        // Tax calculation limits and rates
+        const FICA_SS_RATE = 0.062;
+        const FICA_SS_LIMIT = 176100;
+        const FICA_MED_RATE = 0.0145;
+        const FUTA_RATE = 0.006;
+        const FUTA_LIMIT = 7000;
+        const GL_RATE = 0.0047;
+        
+        // State SUTA rates
+        const STATE_SUTA_RATES = {
+            'VA': 2.5,
+            'MD': 3.0,
+            'DC': 2.7,
+            'WV': 2.8
+        };
+
+        // Initialize settings
+        let settings = {
+            sutaRate: 0.025,
+            defaultWCRate: 8.37,
+            defaultMarkup: 0.15,
+            includeYTD: true,
+            payFrequency: 'weekly',
+            state: 'VA'
+        };
+
+        function initializeDates() {
+            const today = new Date();
+            const sunday = new Date(today);
+            sunday.setDate(today.getDate() - today.getDay());
+            const saturday = new Date(sunday);
+            saturday.setDate(sunday.getDate() + 6);
+            
+            document.getElementById('periodStart').value = sunday.toISOString().split('T')[0];
+            document.getElementById('periodEnd').value = saturday.toISOString().split('T')[0];
+        }
+
+        function updatePeriod() {
+            calculateAll();
+        }
+
+        function updateSettings() {
+            settings.sutaRate = parseFloat(document.getElementById('sutaRate').value) / 100;
+            settings.defaultWCRate = parseFloat(document.getElementById('wcRate').value);
+            settings.defaultMarkup = parseFloat(document.getElementById('defaultMarkup').value) / 100;
+            settings.includeYTD = document.getElementById('includeYTD').checked;
+            settings.payFrequency = document.getElementById('payFrequency').value;
+            
+            document.getElementById('sutaDisplay').textContent = (settings.sutaRate * 100).toFixed(1) + '%';
+            
+            calculateAll();
+        }
+
+        function updateStateTax() {
+            const state = document.getElementById('state').value;
+            settings.state = state;
+            settings.sutaRate = STATE_SUTA_RATES[state] / 100;
+            document.getElementById('sutaRate').value = STATE_SUTA_RATES[state];
+            document.getElementById('stateDisplay').textContent = state;
+            updateSettings();
+        }
+
+        function calculatePayroll(employee, index) {
+            const regPay = employee.regHours * employee.rate;
+            const otPay = employee.otHours * (employee.rate * 1.5);
+            const totalGross = regPay + otPay;
+            const ytdGrossAfter = employee.ytdGross + totalGross;
+            
+            // Calculate employer taxes with YTD limits
+            let socialSecurity = totalGross * FICA_SS_RATE;
+            if (settings.includeYTD && employee.ytdGross >= FICA_SS_LIMIT) {
+                socialSecurity = 0;
+            } else if (settings.includeYTD && ytdGrossAfter > FICA_SS_LIMIT) {
+                socialSecurity = (FICA_SS_LIMIT - employee.ytdGross) * FICA_SS_RATE;
+            }
+            
+            const medicare = totalGross * FICA_MED_RATE;
+            
+            let futa = totalGross * FUTA_RATE;
+            if (settings.includeYTD && employee.ytdGross >= FUTA_LIMIT) {
+                futa = 0;
+            } else if (settings.includeYTD && ytdGrossAfter > FUTA_LIMIT) {
+                futa = (FUTA_LIMIT - employee.ytdGross) * FUTA_RATE;
+            }
+            
+            const suta = totalGross * settings.sutaRate;
+            const wc = totalGross * (employee.wcRate / 100);
+            const gl = totalGross * GL_RATE;
+            
+            const totalEmployerCost = totalGross + socialSecurity + medicare + futa + suta + wc + gl;
+            const markupFee = totalEmployerCost * employee.markup;
+            const totalBill = totalEmployerCost + markupFee;
+            
+            return {
+                regPay,
+                otPay,
+                totalGross,
+                ytdGrossAfter,
+                socialSecurity,
+                medicare,
+                futa,
+                suta,
+                wc,
+                gl,
+                totalEmployerCost,
+                markupFee,
+                totalBill
+            };
+        }
+
+        function formatCurrency(value) {
+            return value.toFixed(2);
+        }
+
+        function updateSummary(totals) {
+            const activeEmployees = employees.filter(e => e.name && (e.regHours > 0 || e.otHours > 0));
+            document.getElementById('totalEmployees').textContent = activeEmployees.length;
+            document.getElementById('totalHours').textContent = (totals.regHours + totals.otHours).toFixed(1);
+            document.getElementById('totalGrossPay').textContent = '$' + totals.totalGross.toFixed(2);
+            document.getElementById('totalEmployerCost').textContent = '$' + totals.totalEmployerCost.toFixed(2);
+            document.getElementById('totalBillAmount').textContent = '$' + totals.totalBill.toFixed(2);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('payrollBody');
+            tbody.innerHTML = '';
+            
+            let totals = {
+                regHours: 0,
+                otHours: 0,
+                regPay: 0,
+                otPay: 0,
+                totalGross: 0,
+                socialSecurity: 0,
+                medicare: 0,
+                futa: 0,
+                suta: 0,
+                wc: 0,
+                gl: 0,
+                totalEmployerCost: 0,
+                markupFee: 0,
+                totalBill: 0
+            };
+            
+            employees.forEach((emp, index) => {
+                const row = document.createElement('tr');
+                
+                if (emp.name === '') {
+                    row.className = 'empty-row';
+                    row.innerHTML = '<td colspan="21">&nbsp;</td>';
+                } else {
+                    const calc = calculatePayroll(emp, index);
+                    
+                    // Add to totals
+                    totals.regHours += emp.regHours;
+                    totals.otHours += emp.otHours;
+                    Object.keys(calc).forEach(key => {
+                        if (totals.hasOwnProperty(key)) {
+                            totals[key] += calc[key];
+                        }
+                    });
+                    
+                    const ytdWarning = settings.includeYTD && (
+                        (emp.ytdGross < FICA_SS_LIMIT && calc.ytdGrossAfter >= FICA_SS_LIMIT) ||
+                        (emp.ytdGross < FUTA_LIMIT && calc.ytdGrossAfter >= FUTA_LIMIT)
+                    );
+                    
+                    row.innerHTML = `
+                        <td>${emp.class}</td>
+                        <td>${emp.subClass}</td>
+                        <td>${emp.name}</td>
+                        <td>$${formatCurrency(emp.rate)}</td>
+                        <td><input type="number" value="${emp.regHours}" onchange="updateHours(${index}, 'regHours', this.value)" step="0.5"></td>
+                        <td>$${formatCurrency(calc.regPay)}</td>
+                        <td><input type="number" value="${emp.otHours}" onchange="updateHours(${index}, 'otHours', this.value)" step="0.5"></td>
+                        <td>$${formatCurrency(calc.otPay)}</td>
+                        <td>$${formatCurrency(calc.totalGross)}</td>
+                        <td>$${formatCurrency(emp.ytdGross)}${ytdWarning ? '<span class="ytd-limit">*</span>' : ''}</td>
+                        <td>$${formatCurrency(calc.socialSecurity)}</td>
+                        <td>$${formatCurrency(calc.medicare)}</td>
+                        <td>$${formatCurrency(calc.futa)}</td>
+                        <td>$${formatCurrency(calc.suta)}</td>
+                        <td>$${formatCurrency(calc.wc)}</td>
+                        <td>$${formatCurrency(calc.gl)}</td>
+                        <td>$${formatCurrency(calc.totalEmployerCost)}</td>
+                        <td>${(emp.markup * 100).toFixed(0)}%</td>
+                        <td>$${formatCurrency(calc.markupFee)}</td>
+                        <td>$${formatCurrency(calc.totalBill)}</td>
+                        <td><button class="delete-btn" onclick="deleteEmployee(${index})">Delete</button></td>
+                    `;
+                }
+                tbody.appendChild(row);
+            });
+            
+            // Add totals row
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total-row';
+            totalRow.innerHTML = `
+                <td colspan="4">TOTALS</td>
+                <td>${totals.regHours.toFixed(1)}</td>
+                <td>$${formatCurrency(totals.regPay)}</td>
+                <td>${totals.otHours.toFixed(1)}</td>
+                <td>$${formatCurrency(totals.otPay)}</td>
+                <td>$${formatCurrency(totals.totalGross)}</td>
+                <td>-</td>
+                <td>$${formatCurrency(totals.socialSecurity)}</td>
+                <td>$${formatCurrency(totals.medicare)}</td>
+                <td>$${formatCurrency(totals.futa)}</td>
+                <td>$${formatCurrency(totals.suta)}</td>
+                <td>$${formatCurrency(totals.wc)}</td>
+                <td>$${formatCurrency(totals.gl)}</td>
+                <td>$${formatCurrency(totals.totalEmployerCost)}</td>
+                <td>-</td>
+                <td>$${formatCurrency(totals.markupFee)}</td>
+                <td>$${formatCurrency(totals.totalBill)}</td>
+                <td></td>
+            `;
+            tbody.appendChild(totalRow);
+            
+            updateSummary(totals);
+        }
+
+        function updateHours(index, type, value) {
+            employees[index][type] = parseFloat(value) || 0;
+            renderTable();
+        }
+
+        function deleteEmployee(index) {
+            if (confirm('Are you sure you want to delete this employee?')) {
+                employees.splice(index, 1);
+                renderTable();
+            }
+        }
+
+        function showAddEmployee() {
+            document.getElementById('addEmployeeModal').style.display = 'block';
+            document.getElementById('newWCRate').value = settings.defaultWCRate;
+            document.getElementById('newMarkup').value = settings.defaultMarkup * 100;
+        }
+
+        function closeModal() {
+            document.getElementById('addEmployeeModal').style.display = 'none';
+            // Clear form
+            document.getElementById('newName').value = '';
+            document.getElementById('newRate').value = '';
+            document.getElementById('newYTD').value = '';
+        }
+
+        function addEmployee() {
+            const newEmployee = {
+                class: document.getElementById('newClass').value,
+                subClass: document.getElementById('newSubClass').value,
+                name: document.getElementById('newName').value,
+                rate: parseFloat(document.getElementById('newRate').value) || 0,
+                regHours: 0,
+                otHours: 0,
+                wcRate: parseFloat(document.getElementById('newWCRate').value) || settings.defaultWCRate,
+                markup: parseFloat(document.getElementById('newMarkup').value) / 100 || settings.defaultMarkup,
+                ytdGross: parseFloat(document.getElementById('newYTD').value) || 0
+            };
+            
+            if (newEmployee.name && newEmployee.rate > 0) {
+                employees.push(newEmployee);
+                renderTable();
+                closeModal();
+            } else {
+                alert('Please enter a valid name and rate.');
+            }
+        }
+
+        function calculateAll() {
+            renderTable();
+        }
+
+        function saveToLocal() {
+            const data = {
+                employees: employees,
+                settings: settings,
+                periodStart: document.getElementById('periodStart').value,
+                periodEnd: document.getElementById('periodEnd').value
+            };
+            localStorage.setItem('payrollData', JSON.stringify(data));
+            alert('Data saved successfully!');
+        }
+
+        function loadFromLocal() {
+            const savedData = localStorage.getItem('payrollData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                employees = data.employees;
+                settings = data.settings;
+                
+                // Update UI
+                document.getElementById('periodStart').value = data.periodStart;
+                document.getElementById('periodEnd').value = data.periodEnd;
+                document.getElementById('payFrequency').value = settings.payFrequency;
+                document.getElementById('state').value = settings.state;
+                document.getElementById('sutaRate').value = settings.sutaRate * 100;
+                document.getElementById('wcRate').value = settings.defaultWCRate;
+                document.getElementById('defaultMarkup').value = settings.defaultMarkup * 100;
+                document.getElementById('includeYTD').checked = settings.includeYTD;
+                
+                updateStateTax();
+                renderTable();
+                alert('Data loaded successfully!');
+            } else {
+                alert('No saved data found.');
+            }
+        }
+
+        function downloadExcel() {
+            const wb = XLSX.utils.book_new();
+            const ws_data = [];
+            
+            // Company info
+            ws_data.push(['Fredericksburg Payroll Report']);
+            ws_data.push(['Period:', document.getElementById('periodStart').value + ' to ' + document.getElementById('periodEnd').value]);
+            ws_data.push([]); // Empty row
+            
+            // Headers
+            ws_data.push([
+                'Classification', 'Sub Classification', 'Employee', 'Base Rate', 
+                'Reg Hours', 'Reg Pay', 'OT Hours', 'OT Pay', 'Total Gross', 'YTD Gross',
+                'Social Security', 'Medicare', 'FUTA', 'SUTA (' + settings.state + ')', 
+                'WC', 'GL/Prof Liab', 'Total Employer Cost', 
+                'Markup %', 'Markup Fee', 'Total Bill'
+            ]);
+            
+            // Data rows with formulas
+            let dataStartRow = 5; // Excel row where data starts (1-indexed)
+            employees.forEach((emp, index) => {
+                if (emp.name !== '') {
+                    const rowNum = dataStartRow + index;
+                    
+                    // Create row with formulas
+                    const row = [
+                        emp.class, emp.subClass, emp.name, emp.rate,
+                        emp.regHours, 
+                        { f: `E${rowNum}*D${rowNum}` }, // Reg Pay formula
+                        emp.otHours, 
+                        { f: `G${rowNum}*D${rowNum}*1.5` }, // OT Pay formula
+                        { f: `F${rowNum}+H${rowNum}` }, // Total Gross formula
+                        emp.ytdGross,
+                        { f: `IF(J${rowNum}>=${FICA_SS_LIMIT},0,IF(J${rowNum}+I${rowNum}>${FICA_SS_LIMIT},(${FICA_SS_LIMIT}-J${rowNum})*${FICA_SS_RATE},I${rowNum}*${FICA_SS_RATE}))` }, // SS formula
+                        { f: `I${rowNum}*${FICA_MED_RATE}` }, // Medicare formula
+                        { f: `IF(J${rowNum}>=${FUTA_LIMIT},0,IF(J${rowNum}+I${rowNum}>${FUTA_LIMIT},(${FUTA_LIMIT}-J${rowNum})*${FUTA_RATE},I${rowNum}*${FUTA_RATE}))` }, // FUTA formula
+                        { f: `I${rowNum}*${settings.sutaRate}` }, // SUTA formula
+                        { f: `I${rowNum}*${emp.wcRate/100}` }, // WC formula
+                        { f: `I${rowNum}*${GL_RATE}` }, // GL formula
+                        { f: `SUM(I${rowNum}:P${rowNum})` }, // Total Cost formula
+                        emp.markup,
+                        { f: `Q${rowNum}*R${rowNum}` }, // Markup Fee formula
+                        { f: `Q${rowNum}+S${rowNum}` } // Total Bill formula
+                    ];
+                    ws_data.push(row);
+                } else {
+                    ws_data.push(Array(20).fill(''));
+                }
+            });
+            
+            // Totals row with formulas
+            const lastDataRow = dataStartRow + employees.length - 1;
+            ws_data.push([
+                'TOTALS', '', '', '',
+                { f: `SUM(E${dataStartRow}:E${lastDataRow})` }, // Total Reg Hours
+                { f: `SUM(F${dataStartRow}:F${lastDataRow})` }, // Total Reg Pay
+                { f: `SUM(G${dataStartRow}:G${lastDataRow})` }, // Total OT Hours
+                { f: `SUM(H${dataStartRow}:H${lastDataRow})` }, // Total OT Pay
+                { f: `SUM(I${dataStartRow}:I${lastDataRow})` }, // Total Gross
+                '-',
+                { f: `SUM(K${dataStartRow}:K${lastDataRow})` }, // Total SS
+                { f: `SUM(L${dataStartRow}:L${lastDataRow})` }, // Total Medicare
+                { f: `SUM(M${dataStartRow}:M${lastDataRow})` }, // Total FUTA
+                { f: `SUM(N${dataStartRow}:N${lastDataRow})` }, // Total SUTA
+                { f: `SUM(O${dataStartRow}:O${lastDataRow})` }, // Total WC
+                { f: `SUM(P${dataStartRow}:P${lastDataRow})` }, // Total GL
+                { f: `SUM(Q${dataStartRow}:Q${lastDataRow})` }, // Total Cost
+                '-',
+                { f: `SUM(S${dataStartRow}:S${lastDataRow})` }, // Total Markup
+                { f: `SUM(T${dataStartRow}:T${lastDataRow})` }  // Total Bill
+            ]);
+            
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 15}, {wch: 20}, {wch: 25}, {wch: 10},
+                {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, {wch: 12}, {wch: 12},
+                {wch: 12}, {wch: 10}, {wch: 10}, {wch: 10},
+                {wch: 10}, {wch: 10}, {wch: 15},
+                {wch: 10}, {wch: 12}, {wch: 12}
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Payroll");
+            
+            // Create tax rates sheet
+            const ws2_data = [
+                ['2025 Tax Rates and Settings'],
+                [''],
+                ['Pay Period:', document.getElementById('periodStart').value + ' to ' + document.getElementById('periodEnd').value],
+                ['State:', settings.state],
+                [''],
+                ['Tax Type', 'Rate', 'Limit', 'Notes'],
+                ['Social Security', '6.2%', '$176,100', 'Employer portion'],
+                ['Medicare', '1.45%', 'No limit', 'Employer portion'],
+                ['FUTA', '0.6%', '$7,000', 'Federal unemployment'],
+                ['SUTA (' + settings.state + ')', (settings.sutaRate * 100).toFixed(1) + '%', 'Varies', 'State unemployment'],
+                ['Workers Comp', 'Varies', 'N/A', 'Based on job classification'],
+                ['GL/Prof Liability', '0.47%', 'N/A', 'General liability insurance']
+            ];
+            
+            const ws2 = XLSX.utils.aoa_to_sheet(ws2_data);
+            XLSX.utils.book_append_sheet(wb, ws2, "Tax Rates");
+            
+            // Create summary sheet
+            const activeEmployees = employees.filter(e => e.name && (e.regHours > 0 || e.otHours > 0));
+            const ws3_data = [
+                ['Payroll Summary'],
+                [''],
+                ['Total Employees:', activeEmployees.length],
+                ['Total Hours:', document.getElementById('totalHours').textContent],
+                ['Total Gross Pay:', document.getElementById('totalGrossPay').textContent],
+                ['Total Employer Cost:', document.getElementById('totalEmployerCost').textContent],
+                ['Total Bill to Client:', document.getElementById('totalBillAmount').textContent],
+                [''],
+                ['Department Breakdown:'],
+                ['Department', 'Employees', 'Hours', 'Gross Pay', 'Total Cost']
+            ];
+            
+            // Calculate department summaries
+            const deptSummary = {};
+            employees.forEach(emp => {
+                if (emp.name && emp.subClass) {
+                    if (!deptSummary[emp.subClass]) {
+                        deptSummary[emp.subClass] = { count: 0, hours: 0, gross: 0, cost: 0 };
+                    }
+                    const calc = calculatePayroll(emp);
+                    deptSummary[emp.subClass].count++;
+                    deptSummary[emp.subClass].hours += emp.regHours + emp.otHours;
+                    deptSummary[emp.subClass].gross += calc.totalGross;
+                    deptSummary[emp.subClass].cost += calc.totalEmployerCost;
+                }
+            });
+            
+            Object.entries(deptSummary).forEach(([dept, data]) => {
+                ws3_data.push([dept, data.count, data.hours.toFixed(1), 
+                              '$' + data.gross.toFixed(2), '$' + data.cost.toFixed(2)]);
+            });
+            
+            const ws3 = XLSX.utils.aoa_to_sheet(ws3_data);
+            XLSX.utils.book_append_sheet(wb, ws3, "Summary");
+            
+            const filename = `Fredericksburg_Payroll_${document.getElementById('periodStart').value}.xlsx`;
+            XLSX.writeFile(wb, filename);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initializeDates();
+            updateSettings();
+            renderTable();
+        };
+        
+        // Modal close on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('addEmployeeModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        };
+    </script>
+</body>
+</html>
